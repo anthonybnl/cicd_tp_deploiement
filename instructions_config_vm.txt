@@ -1,0 +1,7 @@
+apt-get update
+
+suivre la doc : https://docs.docker.com/engine/install/ubuntu/
+
+en root : usermod -aG docker ubuntu
+
+docker run --name api-tp-cicd -d --pull always --restart unless-stopped -p 3000:3000 eldrynor/efrei_m2_tp_cicd:latest
