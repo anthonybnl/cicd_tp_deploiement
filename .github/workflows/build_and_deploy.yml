@@ -84,3 +84,12 @@ jobs:
           EOF
         env:
           CONTAINER_NAME: api-tp-cicd
+
+  healthcheck:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test healthcheck on deployed app
+        run: sleep 3 && curl http://$DEPLOY_IP:3000/health
+        env:
+          DEPLOY_IP: ${{ vars.DEPLOY_IP }}
