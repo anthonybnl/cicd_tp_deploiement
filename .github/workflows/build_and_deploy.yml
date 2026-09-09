@@ -4,25 +4,41 @@ env:
 on:
   push:
 jobs:
-  # build_and_push:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v4
-  #       with:
-  #         username: ${{ vars.HUB_USERNAME }}
-  #         password: ${{ secrets.HUB_TOKEN }}
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v4
-  #     - name: Build and push image
-  #       uses: docker/build-push-action@v7
-  #       with:
-  #         push: true
-  #         tags: ${{ env.IMAGE_NAME }}
+  unit_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - name: Set up Python 12
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: install requirements
+        run: python -m pip install -r requirements.txt
+      - name: launch unit test
+        run: python -m unittest discover -s tests/unit/
+
+
+  build_and_push:
+    needs: unit_test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ vars.HUB_USERNAME }}
+          password: ${{ secrets.HUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
 
   deploy:
+    needs: build_and_push
     runs-on: ubuntu-latest
-    # needs: build_and_push
     env:
       SSH_HOST: ${{ vars.DEPLOY_IP }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -38,10 +54,11 @@ jobs:
         run: |
           ssh -i ~/.ssh/private.pem ubuntu@$SSH_HOST << EOF
             IMAGE_NAME="${{ env.IMAGE_NAME }}"
-            docker stop api-tp-cicd || true
-            docker rm api-tp-cicd || true
+            CONTAINER_NAME="${{ env.CONTAINER_NAME }}"
+            docker stop $CONTAINER_NAME || true
+            docker rm CONTAINER_NAME || true
             docker pull $IMAGE_NAME
-            docker run --name api-tp-cicd -d --restart unless-stopped -p 3000:3000 $IMAGE_NAME
+            docker run --name $CONTAINER_NAME -d --restart unless-stopped -p 3000:3000 $IMAGE_NAME
           EOF
         env:
           CONTAINER_NAME: api-tp-cicd
