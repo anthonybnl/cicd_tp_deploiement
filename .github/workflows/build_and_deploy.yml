@@ -29,11 +29,19 @@ jobs:
     steps:
       - name: clef SSH
         run: |
-          mkdir ~/.ssh
+          mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/private.pem
           chmod 600 ~/.ssh/private.pem
           echo "ssh-keyscan -H $SSH_HOST > ~/.ssh/known_hosts"
-          ssh-keyscan -H $SSH_HOST > ~/.ssh/known_hosts         
+          ssh-keyscan -H $SSH_HOST > ~/.ssh/known_hosts
       - name: docker
         run: |
-          ssh -i ~/.ssh/private.pem ubuntu@$SSH_HOST docker ps
+          ssh -i ~/.ssh/private.pem ubuntu@$SSH_HOST << EOF
+            IMAGE_NAME="${{ env.IMAGE_NAME }}"
+            docker stop api-tp-cicd || true
+            docker rm api-tp-cicd || true
+            docker pull $IMAGE_NAME
+            docker run --name api-tp-cicd -d --restart unless-stopped -p 3000:3000 $IMAGE_NAME
+          EOF
+        env:
+          CONTAINER_NAME: api-tp-cicd
