@@ -1,6 +1,6 @@
 name: build_and_deploy
 env:
-  IMAGE_NAME: mon_app/api:latest
+  IMAGE_NAME: eldrynor/efrei_m2_tp_cicd:latest
 on:
   push:
 jobs:
@@ -16,8 +16,8 @@ jobs:
         uses: docker/setup-buildx-action@v4
         # with:
         #   driver-opts: network=host
-      # - name: Build and push image
-      #   uses: docker/build-push-action@v7
-      #   with:
-      #     push: true
-      #     tags: localhost:5000/${{ env.IMAGE_NAME }}
+      - name: Build and push image
+        uses: docker/build-push-action@v7
+        with:
+          push: true
+          tags: ${{ env.IMAGE_NAME }}
